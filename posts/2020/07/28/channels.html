@@ -1,0 +1,283 @@
+
+    
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <title>blog</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+    <nav id="nav-bar">
+        <ul>
+            
+                <li><a href="/">home</a></li>
+            
+                <li><a href="/posts/all.html">archive</a></li>
+            
+            
+                <li><a href="/notes.html">notes</a></li>
+            
+                <li><a href="/about.html">about</a></li>
+            
+        </ul>
+    </nav>
+    <section id="content">
+
+    
+<article>
+    
+        <h1>Channels</h1>
+    
+    <div class="info">
+        <div class="date">July 28th, 2020</div>
+    </div>
+    <div id="post-content">
+        
+<p>Channels are a special kind of synchronisation primitive in Go. Unlike the <a href="https://golang.org/pkg/sync/#Mutex">mutual exclusion lock</a> or the <a href="https://golang.org/pkg/sync/#Map">concurrent map</a> (two of many in the <a href="https://golang.org/pkg/sync/">sync</a> package), Channels are first-class types that need not be imported. Channels first originated in Tony Hoare's influential paper on <a href="https://en.wikipedia.org/wiki/Communicating_sequential_processes">Communicating Sequential Processes</a> (CSP), which the designers of Go hold in <a href="https://youtu.be/cN_DpYBzKso?t=229">high regard</a>. They provide a mechanism for <a href="https://en.wikipedia.org/wiki/Inter-process_communication">inter-process communication</a>, which in Go terms means they let goroutines send and receive values. This is a simple but powerful idea, which Go promotes with the following <a href="https://www.youtube.com/watch?v=PAAkCSZUG1c&t=2m48s">proverb</a>:</p>
+
+<blockquote><p>Don't communicate by sharing memory, share memory by communicating</p>
+</blockquote>
+<p>This was long the mantra of Go, which is referenced in <a href="https://golang.org/doc/effective_go.html#sharing">Effective Go</a> and a <a href="https://blog.golang.org/codelab-share">blog post</a>:</p>
+
+<blockquote><p>Traditional threading models (commonly used when writing Java, C++, and Python programs, for example) require the programmer to communicate between threads using shared memory. Typically, shared data structures are protected by locks, and threads will contend over those locks to access the data. In some cases, this is made easier by the use of thread-safe data structures such as Python's Queue.</p>
+<p></p>
+<p>Go's concurrency primitives - goroutines and channels - provide an elegant and distinct means of structuring concurrent software. (These concepts have an interesting history that begins with C. A. R. Hoare's Communicating Sequential Processes.) Instead of explicitly using locks to mediate access to shared data, Go encourages the use of channels to pass references to data between goroutines. This approach ensures that only one goroutine has access to the data at a given time.</p>
+</blockquote>
+<p>With that, let's take a look at their usage.</p>
+
+<h2>Channel usage</h2>
+
+<p>The <span class="code">chan</span> keyword denotes the <a href="https://golang.org/ref/spec#Channel_types">channel type</a>. Channels are typed, initialised with the <span class="code">make</span> function, and their uninitialised value is <span class="code">nil</span>. The following makes the composite type <span class="code">chan int</span>, which is a channel that can send and receive integers:</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+</div>
+
+<p>The operator <span class="code"><-</span> denotes a send or receive. </p>
+
+<p>To send, place it to the right of the channel:</p>
+
+
+<div class="code">c <- "I'm a send"
+</div>
+
+<p>And to receive, place it to the left of the channel:</p>
+
+
+<div class="code">v := <-c
+</div>
+
+<p>Channels have a capacity:</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>, 10) <span class="comment">// capacity of 10</span>
+c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>, 0)     <span class="comment">// equivalent to make(chan int)</span>
+</div>
+
+<p>A capacity of <span class="code">0</span> is <em>unbuffered</em>; a capacity of <span class="code">>0</span> is <em>buffered</em>. </p>
+
+<p>Sends on an unbuffered channel block until a receiver receives; receives on an unbuffered channel block until a sender sends.</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>) <span class="comment">// capacity of 0; unbuffered</span>
+c <- 10             <span class="comment">// blocks</span>
+</div>
+
+<p>Sends on a buffered channel block if the buffer is full; receives on a buffered channel block if the buffer is empty.</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>, 1) <span class="comment">// capacity of 1</span>
+c <- 10                <span class="comment">// does not block</span>
+fmt.Println(<-c)       <span class="comment">// prints the received value</span>
+</div>
+
+<p>Functions with a channel parameter can specify whether the channel is send-only or receive-only:</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	c1 := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+	c2 := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+	<span class="keyword">go</span> f(c1, c2) <span class="comment">// blocks without the go keyword</span>
+	c1 <- 10
+	fmt.Println(<-c2)
+}
+
+<span class="keyword">func</span> f(receiveOnly <-<span class="keyword">chan</span> <span class="datatype">int</span>, sendOnly <span class="keyword">chan</span><- <span class="datatype">int</span>) {
+	sendOnly <- <-receiveOnly
+}
+</div>
+
+<p><span class="code">f</span> receives from the receive-only channel, and then sends the value to the send-only channel. Note the comment on the invocation of <span class="code">f</span>: the channel is unbuffered, which means it would block if it wasn't spawned in a new goroutine.</p>
+
+<p>Channels may also be <a href="https://golang.org/ref/spec#Close">closed</a> to indicate no more values will be sent. Closed channel sends panic; closed channel receives return the zero-value.</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>)
+<span class="builtin">close</span>(c)
+fmt.Println(<-c) <span class="comment">// prints the zero-value: ""</span>
+c <- "test"      <span class="comment">// panics</span>
+</div>
+
+<p>The receive operator can also return a boolean value to indicate whether the value was produced by a successful send operation:</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>, 1)
+c <- "test"
+<span class="builtin">close</span>(c)
+v1, ok := <-c
+fmt.Println(v1, ok) <span class="comment">// prints "test" + "true"</span>
+v2, ok := <-c
+fmt.Println(v2, ok) <span class="comment">// prints "" + "false"</span>
+</div>
+
+<p>Channels can also be ranged over:</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>, 2)
+<span class="keyword">go</span> <span class="keyword">func</span>() {
+    <span class="keyword">for</span> i := 0; i < 3; i++ {
+        c <- i
+        time.Sleep(time.Duration(i) * time.Second)
+    }
+    <span class="builtin">close</span>(c)
+}()
+<span class="keyword">for</span> v := <span class="keyword">range</span> c {
+    fmt.Println(v)
+}
+</div>
+
+<p>The iteration stops when the channel is closed; the range deadlocks if the channel isn't closed and no more values are sent.</p>
+
+<p>The composition of channels are somewhat analogous to UNIX pipelines: the output of one channel can be <em>piped</em> into the input of another. The official Go Blog has an excellent <a href="https://blog.golang.org/pipelines">pipelines post</a>. The example below creates a data pipeline with two stages: the first stage filters valid integers out of a list of strings, and the second stage squares them:</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	input := []<span class="datatype">string</span>{"1", "2", "a", "b", "3", "2", "3"}
+	<span class="keyword">for</span> squared := <span class="keyword">range</span> squarer(filter(input...)) {
+		fmt.Println(squared)
+	}
+}
+
+<span class="keyword">func</span> filter(input ...<span class="datatype">string</span>) <-<span class="keyword">chan</span> <span class="datatype">int</span> {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> _, s := <span class="keyword">range</span> input {
+			i, err := strconv.Atoi(s)
+			<span class="keyword">if</span> err != nil {
+				<span class="keyword">continue</span>
+			}
+			c <- i
+		}
+		<span class="builtin">close</span>(c)
+	}()
+	<span class="keyword">return</span> c
+}
+
+<span class="keyword">func</span> squarer(input <-<span class="keyword">chan</span> <span class="datatype">int</span>) <-<span class="keyword">chan</span> <span class="datatype">int</span> {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> i := <span class="keyword">range</span> input {
+			c <- i * i
+		}
+		<span class="builtin">close</span>(c)
+	}()
+	<span class="keyword">return</span> c
+}
+</div>
+
+<h2>Selecting channels</h2>
+
+<p>Consider an application that's waiting on two channels. What happens if one is quiet and one is chatty? Won't it block? Or, at the very least, won't we be stuck waiting on the quiet channel when we could be dealing with the chatty channel?</p>
+
+<p>Enter the <span class="code">select</span> statement, which is like a <span class="code">switch</span> statement for channels. Each <span class="code">case</span> statement deals with a send or receive on a channel, and the <span class="code">default</span> case handles the instances where no channel is ready.</p>
+
+<p>Consider the example below. The select waits on two channels: the first receives the string <em>BOOM</em> every 5 seconds, and the second is a neat little function provided by the <a href="https://golang.org/pkg/time/#After">time</a> package, which receives the current time every 1 second, and in this case just prints <em>tick</em>.</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	boomCh := boom(5)
+	<span class="keyword">for</span> {
+		<span class="keyword">select</span> {
+		<span class="keyword">case</span> v := <-boomCh:
+			fmt.Println(v)
+		<span class="keyword">case</span> <-time.After(1 * time.Second):
+			fmt.Println("tick")
+		}
+	}
+}
+
+<span class="keyword">func</span> boom(interval <span class="datatype">int</span>) <-<span class="keyword">chan</span> <span class="datatype">string</span> {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>)
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> {
+			time.Sleep(time.Duration(interval) * time.Second)
+			c <- "BOOM"
+		}
+	}()
+	<span class="keyword">return</span> c
+}
+</div>
+
+<p>And another example, which waits on a single channel and implements the default case:</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>)
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> i := 0; i < 5; i++ {
+			c <- strconv.Itoa(i)
+			time.Sleep(time.Duration(i) * time.Second)
+		}
+		<span class="builtin">close</span>(c)
+	}()
+	<span class="keyword">for</span> {
+		<span class="keyword">select</span> {
+		<span class="keyword">case</span> v, ok := <-c:
+			<span class="keyword">if</span> !ok {
+				fmt.Println("done")
+				<span class="keyword">return</span>
+			}
+			fmt.Println(v)
+		<span class="keyword">default</span>:
+			fmt.Println("waiting")
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+</div>
+
+<p>And the final example, which waits on two channels: a send operation which is being received by a goroutine that stops receiving after 5; a receive on the neat little time function mentioned earlier, which in this case acts like a timeout (such that the program ends when the goroutine stops reading and two seconds have passed):</p>
+
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>{})
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> i := 0; i < 5; i++ {
+			<-c
+			time.Sleep(1 * time.Second)
+		}
+	}()
+	<span class="keyword">for</span> {
+		<span class="keyword">select</span> {
+		<span class="keyword">case</span> c <- <span class="keyword">struct</span>{}{}:
+			fmt.Println("sent")
+		<span class="keyword">case</span> <-time.After(2 * time.Second):
+			fmt.Println("I'm done waiting")
+			<span class="keyword">return</span>
+		}
+	}
+}
+</div>
+
+<p>To summarise, channels let goroutines communicate with each other. They're typed, can be buffered or unbuffered, and they don't need to be imported. The channel combined with the goroutine and select statement are what differentiates Go from other languages and enables its CSP inspired concurrency.</p>
+    </div>
+</article>
+
+    
+    </section>
+    </body>
+    </html>
+

@@ -1,1 +1,622 @@
-hello world
+
+    
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <title>blog</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+    <nav id="nav-bar">
+        <ul>
+            
+                <li><a href="/">home</a></li>
+            
+                <li><a href="/posts/all.html">archive</a></li>
+            
+            
+                <li><a href="/notes.html">notes</a></li>
+            
+                <li><a href="/about.html">about</a></li>
+            
+        </ul>
+    </nav>
+    <section id="content">
+
+    
+        
+<article>
+    
+        <h1><a href="/posts/2021/01/18/slices.html">Slices</a></h1>
+    
+    <div class="info">
+        <div class="date">January 18th, 2021</div>
+    </div>
+    <div id="post-content">
+        
+<p>Slices abstract over arrays. Let's start with the array.</p>
+
+<h2>Arrays</h2>
+
+<p>Go arrays are typed, have fixed lengths, do not need to be initialised, and default to zero values. The length forms part of its type:</p>
+
+
+<div class="code"><span class="keyword">var</span> costs [3]<span class="datatype">int</span>
+fmt.Println(costs) <span class="comment">// [0, 0, 0]</span>
+fmt.Println(reflect.TypeOf(costs)) <span class="comment">// [3]int</span>
+
+<span class="keyword">var</span> revenue [4]<span class="datatype">int</span>
+fmt.Println(revenue) <span class="comment">// [0, 0, 0, 0]</span>
+fmt.Println(reflect.TypeOf(revenue)) <span class="comment">// [4]int</span>
+</div>
+
+<p>Arrays are value types. The entire contents of an array is copied when passed to a function; array pointers are used to improve performance.</p>
+
+
+<div class="code">myCosts = &costs
+myCosts[0] = 10
+myCosts[2] = 30
+</div>
+
+<p>Go supports array literals:</p>
+
+
+<div class="code">fixedCosts := [4]<span class="datatype">int</span>{10, 20, 30, 40}
+</div>
+
+<p>And has a little syntactic sugar to save counting:</p>
+
+
+<div class="code">varCosts := [...]<span class="datatype">int</span>{1, 2, 3, 4, 5, 6, 7}
+fmt.Println(reflect.TypeOf(varCosts)) <span class="comment">// [7]int </span>
+</div>
+
+<h1>Slices</h1>
+
+<p>To reiterate, slices abstract over arrays. They have three properties:</p>
+
+<ul><li>A pointer to the first element of the underlying array</li>
+<li>A length, which can be inspected with the <a href="https://golang.org/pkg/builtin/#len">built-in function</a> <span class="code">len</span></li>
+<li>A capacity, which can be inspected with the <a href="https://golang.org/pkg/builtin/#cap">built-in function</a> <span class="code">cap</span></li>
+</ul>
+<p>The zero-value of a slice is <span class="code">nil</span>:</p>
+
+
+<div class="code"><span class="keyword">var</span> slice []<span class="datatype">string</span>
+
+isNil := slice == nil <span class="comment">// true</span>
+</div>
+
+<p>Initialise a slice with <span class="code">make</span>:</p>
+
+
+<div class="code">newsletters := <span class="builtin">make</span>([]<span class="datatype">string</span>, 2)
+newsletters[0] = "Money Stuff by Matt Levine"
+newsletters[1] = "The Bluestocking by Helen Lewis"
+</div>
+
+<p>Or use a slice literal:</p>
+
+
+<div class="code">newsletters := []<span class="datatype">string</span>{
+    "Money Stuff by Matt Levine",
+    "The Bluestocking by Helen Lewis",
+}
+</div>
+
+<p>Unlike arrays, they have no fixed length:</p>
+
+
+<div class="code">finance := []<span class="datatype">string</span>{"ft", "the economist"}      <span class="comment">// 2</span>
+general := []<span class="datatype">string</span>{"bbc", "hn", "lrb", "nyrb"} <span class="comment">// 4</span>
+
+fmt.Println(reflect.TypeOf(finance)) <span class="comment">// []string</span>
+fmt.Println(reflect.TypeOf(general)) <span class="comment">// []string</span>
+</div>
+
+<p>Slices use zero-based indexing:</p>
+
+
+<div class="code">under3 := []<span class="datatype">int</span>{0, 1, 2} <span class="comment">// [0, 1, 2]</span>
+
+under3[0:0]              <span class="comment">// []</span>
+under3[0:1]              <span class="comment">// [0]</span>
+under3[0:2]              <span class="comment">// [0, 1]</span>
+under3[0:3]              <span class="comment">// [0, 1, 2]</span>
+</div>
+
+<p>They can be indexed from zero through to the length of the underlying array. </p>
+
+<p>The <em>length</em> of a slice is the number of items in the slice. Using the example above:</p>
+
+
+<div class="code"><span class="builtin">len</span>(under3[0:0]) <span class="comment">// 0: []</span>
+<span class="builtin">len</span>(under3[0:1]) <span class="comment">// 1: [0]</span>
+<span class="builtin">len</span>(under3[0:2]) <span class="comment">// 2: [0, 1]</span>
+<span class="builtin">len</span>(under3[0:3]) <span class="comment">// 3: [0, 1, 2]</span>
+</div>
+
+<p>The <em>capacity</em> of a slice is the length of the underlying array.</p>
+
+
+<div class="code">first := under3[0:1] <span class="comment">// [0]</span>
+
+<span class="builtin">len</span>(first)           <span class="comment">// 1: [0]</span>
+<span class="builtin">cap</span>(first)           <span class="comment">// 3: [0, 1, 2]</span>
+</div>
+
+<p>The <em>slice pointer</em> is the memory address of the first element of the underlying array:</p>
+
+
+<div class="code">finance := []<span class="datatype">string</span>{"ft", "the economist"}
+
+fmt.Printf("%p", finance) <span class="comment">// 0xc0000a6020</span>
+</div>
+
+<p>Thus <span class="code">0xc0000a6020</span> is the memory address of <span class="code">ft</span> in the array type <span class="code">[2]string</span>.</p>
+
+<p>The slice pointer changes when the left-index changes. That is, slicing from <span class="code">[0:3]</span> to <span class="code">[0:cap(slice)]</span> has no effect on the slice pointer. But, a move from <span class="code">[0:3]</span> to <span class="code">[2:3]</span> <em>does</em>.</p>
+
+<p>A few important points:</p>
+
+<ul><li>The length of a slice can only grow to its capacity</li>
+<li>The left-index of a slice cannot be less than zero</li>
+<li>The capacity of the slice decreases as the left-index increases</li>
+</ul>
+<p>To illustrate, consider the below:</p>
+
+
+<div class="code">newsletters := []<span class="datatype">string</span>{
+    "Matt Levine",
+    "Helen Lewis",
+}
+
+fmt.Printf("%p\n", newsletters) <span class="comment">// 0xc00000c080</span>
+
+newsletters = newsletters[1:]   <span class="comment">// remove Matt Levine</span>
+
+<span class="builtin">len</span>(newsletters) <span class="comment">// 1</span>
+<span class="builtin">cap</span>(newsletters) <span class="comment">// 1</span>
+
+fmt.Printf("%p\n", newsletters) <span class="comment">// 0xc00000c090</span>
+</div>
+
+<p>The re-slice of <span class="code">newsletters</span> from <span class="code">[0:cap(newsletters)]</span> to <span class="code">[1:]</span> reduces the capacity from two to one. And, as I mentioned earlier, a slice cannot grow beyond its capacity: <span class="code">Matt Levine</span> is lost forever (a tragic day!).</p>
+
+<p>That said, this sort of isn't true. The <a href="https://golang.org/pkg/builtin/#append">built-in function</a> <span class="code">append</span> can, which:</p>
+
+<blockquote><p>appends elements to the end of a slice. If it has sufficient capacity, the destination is resliced to accommodate the new elements. If it does not, a new underlying array will be allocated. Append returns the updated slice. It is therefore necessary to store the result of append, often in the variable holding the slice itself</p>
+</blockquote>
+<p>For example:</p>
+
+
+<div class="code"><span class="keyword">var</span> pension = []<span class="datatype">string</span>{"apple", "google"}
+
+pension = <span class="builtin">append</span>(pension, "netflix", "tesla")
+</div>
+
+<p>Go has another useful <a href="https://golang.org/pkg/builtin/#copy">built-in function</a> called <span class="code">copy</span>, which:</p>
+
+<blockquote><p>copies elements from a source slice into a destination slice. (As a special case, it also will copy bytes from a string to a slice of bytes.) The source and destination may overlap. Copy returns the number of elements copied, which will be the minimum of len(src) and len(dst).</p>
+</blockquote>
+<p>For example:</p>
+
+
+<div class="code"><span class="keyword">var</span> savings = <span class="builtin">make</span>([]<span class="datatype">string</span>, 2)
+
+<span class="builtin">copy</span>(savings, pension)
+</div>
+
+<p>To finish, let me quote Andrew Gerrand from the excellent blog post <a href="https://blog.golang.org/slices-intro">Go Slices: usage and internals</a>:</p>
+
+<blockquote><p>Arrays have their place, but they're a bit inflexible, so you don't see them too often in Go code. Slices, though, are everywhere. They build on arrays to provide great power and convenience.</p>
+</blockquote>
+<p>... like the <a href="https://golang.org/pkg/sort/">sort package</a>: slices, everywhere! </p>
+    </div>
+</article>
+
+    
+        
+<article>
+    
+        <h1><a href="/posts/2020/12/18/john-le-carr%c3%a9.html">John le Carré</a></h1>
+    
+    <div class="info">
+        <div class="date">December 18th, 2020</div>
+    </div>
+    <div id="post-content">
+        
+<p>John le Carré died on <a href="https://www.penguin.co.uk/articles/2020/december/John-le-carre-dies-statement.html">December 12th</a>.</p>
+
+<p>Ann Wroe has written a beautiful <a href="https://www.economist.com/obituary/2020/12/14/john-le-carre-died-on-december-12th">piece</a> in The Economist:</p>
+
+<blockquote><p>There he worked away. And it seemed to him from time to time, when he looked up, that a figure observed him. Balding, plump, quite unlike him physically, but with the same tendency to want to hide, and the same occasional sharp pain from seeing too much. Even at a distance he could spot him, from the way he thoughtfully cleaned his glasses with the fat end of his tie. A large part of himself, too, had gone to make up Smiley. He was now walking towards him, his lenses gleaming like mirrors.</p>
+</blockquote>
+<p>Likewise, Simon Schama has a <a href="https://www.ft.com/content/04df988d-9b09-4e6a-b7d8-70b1a5e654dc">lovely piece</a> in the FT:</p>
+
+<blockquote><p>But beyond all that, le Carré’s writing will endure in the great pantheon of English literature as the work of an incomparable language-wrangler: often surprisingly tender amid the carnage, exactingly watchful, brimming with sensuous plenitude, even on rain-sodden city streets, and with the bloody beat of life pounding away on every page</p>
+</blockquote>
+<p>Having loved le Carré for so long, it's hard to pick a favourite. But, a special mention goes to <a href="https://www.amazon.co.uk/Came-Cold-Penguin-Modern-Classics/dp/0141194529">The Spy Who Came In From The Cold</a>, <em>the</em> cold war spy novel, and <a href="https://www.amazon.co.uk/Honourable-Schoolboy-John-Carr%C3%A9/dp/0340993774">The Honourable Schoolboy</a>, his masterpiece.</p>
+
+<p>R.I.P. John le Carré.</p>
+    </div>
+</article>
+
+    
+        
+<article>
+    
+        <h1><a href="/posts/2020/07/28/channels.html">Channels</a></h1>
+    
+    <div class="info">
+        <div class="date">July 28th, 2020</div>
+    </div>
+    <div id="post-content">
+        
+<p>Channels are a special kind of synchronisation primitive in Go. Unlike the <a href="https://golang.org/pkg/sync/#Mutex">mutual exclusion lock</a> or the <a href="https://golang.org/pkg/sync/#Map">concurrent map</a> (two of many in the <a href="https://golang.org/pkg/sync/">sync</a> package), Channels are first-class types that need not be imported. Channels first originated in Tony Hoare's influential paper on <a href="https://en.wikipedia.org/wiki/Communicating_sequential_processes">Communicating Sequential Processes</a> (CSP), which the designers of Go hold in <a href="https://youtu.be/cN_DpYBzKso?t=229">high regard</a>. They provide a mechanism for <a href="https://en.wikipedia.org/wiki/Inter-process_communication">inter-process communication</a>, which in Go terms means they let goroutines send and receive values. This is a simple but powerful idea, which Go promotes with the following <a href="https://www.youtube.com/watch?v=PAAkCSZUG1c&t=2m48s">proverb</a>:</p>
+
+<blockquote><p>Don't communicate by sharing memory, share memory by communicating</p>
+</blockquote>
+<p>This was long the mantra of Go, which is referenced in <a href="https://golang.org/doc/effective_go.html#sharing">Effective Go</a> and a <a href="https://blog.golang.org/codelab-share">blog post</a>:</p>
+
+<blockquote><p>Traditional threading models (commonly used when writing Java, C++, and Python programs, for example) require the programmer to communicate between threads using shared memory. Typically, shared data structures are protected by locks, and threads will contend over those locks to access the data. In some cases, this is made easier by the use of thread-safe data structures such as Python's Queue.</p>
+<p></p>
+<p>Go's concurrency primitives - goroutines and channels - provide an elegant and distinct means of structuring concurrent software. (These concepts have an interesting history that begins with C. A. R. Hoare's Communicating Sequential Processes.) Instead of explicitly using locks to mediate access to shared data, Go encourages the use of channels to pass references to data between goroutines. This approach ensures that only one goroutine has access to the data at a given time.</p>
+</blockquote>
+<p>With that, let's take a look at their usage.</p>
+
+<h2>Channel usage</h2>
+
+<p>The <span class="code">chan</span> keyword denotes the <a href="https://golang.org/ref/spec#Channel_types">channel type</a>. Channels are typed, initialised with the <span class="code">make</span> function, and their uninitialised value is <span class="code">nil</span>. The following makes the composite type <span class="code">chan int</span>, which is a channel that can send and receive integers:</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+</div>
+
+<p>The operator <span class="code"><-</span> denotes a send or receive. </p>
+
+<p>To send, place it to the right of the channel:</p>
+
+
+<div class="code">c <- "I'm a send"
+</div>
+
+<p>And to receive, place it to the left of the channel:</p>
+
+
+<div class="code">v := <-c
+</div>
+
+<p>Channels have a capacity:</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>, 10) <span class="comment">// capacity of 10</span>
+c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>, 0)     <span class="comment">// equivalent to make(chan int)</span>
+</div>
+
+<p>A capacity of <span class="code">0</span> is <em>unbuffered</em>; a capacity of <span class="code">>0</span> is <em>buffered</em>. </p>
+
+<p>Sends on an unbuffered channel block until a receiver receives; receives on an unbuffered channel block until a sender sends.</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>) <span class="comment">// capacity of 0; unbuffered</span>
+c <- 10             <span class="comment">// blocks</span>
+</div>
+
+<p>Sends on a buffered channel block if the buffer is full; receives on a buffered channel block if the buffer is empty.</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>, 1) <span class="comment">// capacity of 1</span>
+c <- 10                <span class="comment">// does not block</span>
+fmt.Println(<-c)       <span class="comment">// prints the received value</span>
+</div>
+
+<p>Functions with a channel parameter can specify whether the channel is send-only or receive-only:</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	c1 := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+	c2 := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+	<span class="keyword">go</span> f(c1, c2) <span class="comment">// blocks without the go keyword</span>
+	c1 <- 10
+	fmt.Println(<-c2)
+}
+
+<span class="keyword">func</span> f(receiveOnly <-<span class="keyword">chan</span> <span class="datatype">int</span>, sendOnly <span class="keyword">chan</span><- <span class="datatype">int</span>) {
+	sendOnly <- <-receiveOnly
+}
+</div>
+
+<p><span class="code">f</span> receives from the receive-only channel, and then sends the value to the send-only channel. Note the comment on the invocation of <span class="code">f</span>: the channel is unbuffered, which means it would block if it wasn't spawned in a new goroutine.</p>
+
+<p>Channels may also be <a href="https://golang.org/ref/spec#Close">closed</a> to indicate no more values will be sent. Closed channel sends panic; closed channel receives return the zero-value.</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>)
+<span class="builtin">close</span>(c)
+fmt.Println(<-c) <span class="comment">// prints the zero-value: ""</span>
+c <- "test"      <span class="comment">// panics</span>
+</div>
+
+<p>The receive operator can also return a boolean value to indicate whether the value was produced by a successful send operation:</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>, 1)
+c <- "test"
+<span class="builtin">close</span>(c)
+v1, ok := <-c
+fmt.Println(v1, ok) <span class="comment">// prints "test" + "true"</span>
+v2, ok := <-c
+fmt.Println(v2, ok) <span class="comment">// prints "" + "false"</span>
+</div>
+
+<p>Channels can also be ranged over:</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>, 2)
+<span class="keyword">go</span> <span class="keyword">func</span>() {
+    <span class="keyword">for</span> i := 0; i < 3; i++ {
+        c <- i
+        time.Sleep(time.Duration(i) * time.Second)
+    }
+    <span class="builtin">close</span>(c)
+}()
+<span class="keyword">for</span> v := <span class="keyword">range</span> c {
+    fmt.Println(v)
+}
+</div>
+
+<p>The iteration stops when the channel is closed; the range deadlocks if the channel isn't closed and no more values are sent.</p>
+
+<p>The composition of channels are somewhat analogous to UNIX pipelines: the output of one channel can be <em>piped</em> into the input of another. The official Go Blog has an excellent <a href="https://blog.golang.org/pipelines">pipelines post</a>. The example below creates a data pipeline with two stages: the first stage filters valid integers out of a list of strings, and the second stage squares them:</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	input := []<span class="datatype">string</span>{"1", "2", "a", "b", "3", "2", "3"}
+	<span class="keyword">for</span> squared := <span class="keyword">range</span> squarer(filter(input...)) {
+		fmt.Println(squared)
+	}
+}
+
+<span class="keyword">func</span> filter(input ...<span class="datatype">string</span>) <-<span class="keyword">chan</span> <span class="datatype">int</span> {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> _, s := <span class="keyword">range</span> input {
+			i, err := strconv.Atoi(s)
+			<span class="keyword">if</span> err != nil {
+				<span class="keyword">continue</span>
+			}
+			c <- i
+		}
+		<span class="builtin">close</span>(c)
+	}()
+	<span class="keyword">return</span> c
+}
+
+<span class="keyword">func</span> squarer(input <-<span class="keyword">chan</span> <span class="datatype">int</span>) <-<span class="keyword">chan</span> <span class="datatype">int</span> {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> i := <span class="keyword">range</span> input {
+			c <- i * i
+		}
+		<span class="builtin">close</span>(c)
+	}()
+	<span class="keyword">return</span> c
+}
+</div>
+
+<h2>Selecting channels</h2>
+
+<p>Consider an application that's waiting on two channels. What happens if one is quiet and one is chatty? Won't it block? Or, at the very least, won't we be stuck waiting on the quiet channel when we could be dealing with the chatty channel?</p>
+
+<p>Enter the <span class="code">select</span> statement, which is like a <span class="code">switch</span> statement for channels. Each <span class="code">case</span> statement deals with a send or receive on a channel, and the <span class="code">default</span> case handles the instances where no channel is ready.</p>
+
+<p>Consider the example below. The select waits on two channels: the first receives the string <em>BOOM</em> every 5 seconds, and the second is a neat little function provided by the <a href="https://golang.org/pkg/time/#After">time</a> package, which receives the current time every 1 second, and in this case just prints <em>tick</em>.</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	boomCh := boom(5)
+	<span class="keyword">for</span> {
+		<span class="keyword">select</span> {
+		<span class="keyword">case</span> v := <-boomCh:
+			fmt.Println(v)
+		<span class="keyword">case</span> <-time.After(1 * time.Second):
+			fmt.Println("tick")
+		}
+	}
+}
+
+<span class="keyword">func</span> boom(interval <span class="datatype">int</span>) <-<span class="keyword">chan</span> <span class="datatype">string</span> {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>)
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> {
+			time.Sleep(time.Duration(interval) * time.Second)
+			c <- "BOOM"
+		}
+	}()
+	<span class="keyword">return</span> c
+}
+</div>
+
+<p>And another example, which waits on a single channel and implements the default case:</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">string</span>)
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> i := 0; i < 5; i++ {
+			c <- strconv.Itoa(i)
+			time.Sleep(time.Duration(i) * time.Second)
+		}
+		<span class="builtin">close</span>(c)
+	}()
+	<span class="keyword">for</span> {
+		<span class="keyword">select</span> {
+		<span class="keyword">case</span> v, ok := <-c:
+			<span class="keyword">if</span> !ok {
+				fmt.Println("done")
+				<span class="keyword">return</span>
+			}
+			fmt.Println(v)
+		<span class="keyword">default</span>:
+			fmt.Println("waiting")
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+</div>
+
+<p>And the final example, which waits on two channels: a send operation which is being received by a goroutine that stops receiving after 5; a receive on the neat little time function mentioned earlier, which in this case acts like a timeout (such that the program ends when the goroutine stops reading and two seconds have passed):</p>
+
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>{})
+	<span class="keyword">go</span> <span class="keyword">func</span>() {
+		<span class="keyword">for</span> i := 0; i < 5; i++ {
+			<-c
+			time.Sleep(1 * time.Second)
+		}
+	}()
+	<span class="keyword">for</span> {
+		<span class="keyword">select</span> {
+		<span class="keyword">case</span> c <- <span class="keyword">struct</span>{}{}:
+			fmt.Println("sent")
+		<span class="keyword">case</span> <-time.After(2 * time.Second):
+			fmt.Println("I'm done waiting")
+			<span class="keyword">return</span>
+		}
+	}
+}
+</div>
+
+<p>To summarise, channels let goroutines communicate with each other. They're typed, can be buffered or unbuffered, and they don't need to be imported. The channel combined with the goroutine and select statement are what differentiates Go from other languages and enables its CSP inspired concurrency.</p>
+    </div>
+</article>
+
+    
+        
+<article>
+    
+        <h1><a href="/posts/2020/07/24/goroutines.html">Goroutines</a></h1>
+    
+    <div class="info">
+        <div class="date">July 24th, 2020</div>
+    </div>
+    <div id="post-content">
+        
+<p>Concurrency is just <em>too</em> easy in Go: put the <span class="code">go</span> <a href="https://golang.org/ref/spec#Go_statements">keyword</a> in front of any function and <em>voila</em>, it runs concurrently. But why is it so easy and how does it work?</p>
+
+<p>It begins with the goroutine. The main function of every Go program executes in a goroutine. They are independent lines of execution, similar to threads. However one key difference is the cost: goroutines are cheap. The default stack size of a POSIX thread is <a href="https://man7.org/linux/man-pages/man3/pthread_create.3.html">2MB</a>, goroutines start with <a href="https://golang.org/doc/go1.4#runtime">2048 bytes</a>. Go uses <a href="https://golang.org/doc/faq#goroutines">resizable, bounded stacks</a>, which the runtime grows and shrinks automatically. It is practical to run hundreds of thousands - even <em>millions</em> - of goroutines. Go does this through its <a href="https://rakyll.org/scheduler/">M:N scheduler</a>. Or, in other words, it multiplexes <em>x</em> goroutines over <em>y</em> OS threads that run on <em>z</em> processors (where <em>z</em> is a <a href="https://golang.org/pkg/runtime/#GOMAXPROCS">configurable number</a>).</p>
+
+
+<div class="code"><span class="keyword">go</span> doWork()
+</div>
+
+<p>Essentially, a goroutine is a function that runs concurrently to other functions.</p>
+
+
+<div class="code"><span class="keyword">go</span> worker(x, y, z)
+</div>
+
+<p>Simply put the <span class="code">go</span> keyword in front of any function call and Go will run the function in a new goroutine. All variables passed to the function are evaluated in the <em>current</em> goroutine. Thus variables <span class="code">x</span>, <span class="code">y</span>, and <span class="code">z</span> in the example above are evaluated in the goroutine executing the <span class="code">go</span> statement, and the <span class="code">worker</span> function is executed in the new goroutine.</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+    <span class="keyword">go</span> <span class="keyword">func</span>() {
+        fmt.Println("hello, world")
+    }()
+}
+</div>
+
+<p>Anonymous functions can be spawned in goroutines too. However note the example above is quite interesting: it doesn't actually print anything. Why?</p>
+
+<p>The Go language <a href="https://golang.org/ref/spec#Program_execution">specification</a>:</p>
+
+<blockquote><p> Program execution begins by initializing the main package and then invoking the function main. When that function invocation returns, the program exits. It does not wait for other (non-main) goroutines to complete.</p>
+</blockquote>
+<p>In other words, it doesn't print anything because the main goroutine died before the spawned goroutine ran.  This highlights an important point: Go provides no guarantee on <em>when</em> goroutines will run — only that it will run, if given enough time.</p>
+
+<p>Go follows the <a href="https://en.wikipedia.org/wiki/Fork%E2%80%93join_model">fork-join</a> model of parallelism: parent goroutines <em>fork</em> child goroutines, with the intention that the child runs in parallel to the parent. Then at some point in the future — usually when the child is finished processing — the child <em>joins</em> back up with the parent (the join point).</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+<span class="keyword">go</span> worker(c) <span class="comment">// fork</span>
+<-c          <span class="comment">// join</span>
+</div>
+
+<p>The main goroutine (<span class="code">g1</span>) forks the function <span class="code">worker</span> in a new goroutine (<span class="code">g2</span>). <span class="code">g2</span> joins back up with <span class="code">g1</span> when <span class="code">g1</span> receives on the channel.</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	<span class="keyword">go</span> hello(wg) <span class="comment">// fork</span>
+	wg.Wait()    <span class="comment">// join</span>
+}
+
+<span class="keyword">func</span> hello(wg sync.WaitGroup) {
+	fmt.Println("hello, world")
+	wg.Done()
+}
+</div>
+
+<p>Perhaps a little more contrived: the main goroutine (<span class="code">g1</span>) forks the function <span class="code">hello</span> in a new goroutine (<span class="code">g2</span>). <span class="code">g2</span> joins back up with <span class="code">g1</span> when <span class="code">g1</span> waits for the <span class="code">WaitGroup</span> to finish (i.e. when the counter is back to zero).</p>
+
+<p>Programmers should be mindful of when and where goroutines start (are forked) and finish (the join points). And, most importantly, know <em>exactly</em> when goroutines block (especially the main thread).</p>
+
+<p>The words <em>concurrency</em> and <em>parallelism</em> were referenced in this post. Rob Pike has an excellent <a href="https://talks.golang.org/2012/concurrency.slide#1">slide deck</a> on the difference. He summarises it on <a href="https://talks.golang.org/2012/concurrency.slide#6">slide 6</a>:</p>
+
+<blockquote><p> Concurrency is the composition of independently executing computations. </p>
+<p>Concurrency is a way to structure software, particularly as a way to write clean code that interacts well with the real world. </p>
+</blockquote>
+<p>And then expands on <a href="https://talks.golang.org/2012/concurrency.slide#7">slide 7</a>:</p>
+
+<blockquote><p>Concurrency is not parallelism, although it enables parallelism. </p>
+<p> If you have only one processor, your program can still be concurrent but it cannot be parallel. </p>
+<p> On the other hand, a well-written concurrent program might run efficiently in parallel on a multiprocessor. That property could be important...</p>
+</blockquote>
+<p>Or, as he put it even more simply in his <a href="https://www.youtube.com/watch?v=cN_DpYBzKso">talk</a>:</p>
+
+<blockquote><p>Concurrency is about dealing with a lot of things at once, and parallelism is about doing a lot of things at once.</p>
+</blockquote>
+<p>To summarise, goroutines are like cheap, lightweight threads. They have their own stack that grows and shrinks automatically; the Go runtime manages their distribution over <em>n</em> OS threads; one should be mindful of exactly when they start, when they finish, and where they block. Essentially, they allow the programmer to write concurrent programs. Get this right, and Go gives you the parallelism for free.</p>
+    </div>
+</article>
+
+    
+        
+<article>
+    
+        <h1><a href="/posts/2020/06/11/welcome.html">Welcome</a></h1>
+    
+    <div class="info">
+        <div class="date">June 11th, 2020</div>
+    </div>
+    <div id="post-content">
+        
+<p>I'm George. Welcome to my blog.</p>
+
+<p>I live in Shropshire, England, write software for a living, and work at a large internet company. I like to read, ramble, run, squirrel away on my Mac, and spend time with my wife, Sammy.</p>
+
+<p>This blog will explore a variety of topics, including:</p>
+
+<ul><li>programming</li>
+<li>the internet</li>
+<li>computer science</li>
+<li>personal finance and investment</li>
+<li>markets</li>
+<li>travel</li>
+</ul>
+<p>Talk to me at <span class="code">contact</span> at my domain.</p>
+    </div>
+</article>
+
+    
+    
+    </section>
+    </body>
+    </html>
+

@@ -1,0 +1,223 @@
+
+    
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <title>blog</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+    <nav id="nav-bar">
+        <ul>
+            
+                <li><a href="/">home</a></li>
+            
+                <li><a href="/posts/all.html">archive</a></li>
+            
+            
+                <li><a href="/notes.html">notes</a></li>
+            
+                <li><a href="/about.html">about</a></li>
+            
+        </ul>
+    </nav>
+    <section id="content">
+
+    
+<article>
+    
+        <h1>Slices</h1>
+    
+    <div class="info">
+        <div class="date">January 18th, 2021</div>
+    </div>
+    <div id="post-content">
+        
+<p>Slices abstract over arrays. Let's start with the array.</p>
+
+<h2>Arrays</h2>
+
+<p>Go arrays are typed, have fixed lengths, do not need to be initialised, and default to zero values. The length forms part of its type:</p>
+
+
+<div class="code"><span class="keyword">var</span> costs [3]<span class="datatype">int</span>
+fmt.Println(costs) <span class="comment">// [0, 0, 0]</span>
+fmt.Println(reflect.TypeOf(costs)) <span class="comment">// [3]int</span>
+
+<span class="keyword">var</span> revenue [4]<span class="datatype">int</span>
+fmt.Println(revenue) <span class="comment">// [0, 0, 0, 0]</span>
+fmt.Println(reflect.TypeOf(revenue)) <span class="comment">// [4]int</span>
+</div>
+
+<p>Arrays are value types. The entire contents of an array is copied when passed to a function; array pointers are used to improve performance.</p>
+
+
+<div class="code">myCosts = &costs
+myCosts[0] = 10
+myCosts[2] = 30
+</div>
+
+<p>Go supports array literals:</p>
+
+
+<div class="code">fixedCosts := [4]<span class="datatype">int</span>{10, 20, 30, 40}
+</div>
+
+<p>And has a little syntactic sugar to save counting:</p>
+
+
+<div class="code">varCosts := [...]<span class="datatype">int</span>{1, 2, 3, 4, 5, 6, 7}
+fmt.Println(reflect.TypeOf(varCosts)) <span class="comment">// [7]int </span>
+</div>
+
+<h1>Slices</h1>
+
+<p>To reiterate, slices abstract over arrays. They have three properties:</p>
+
+<ul><li>A pointer to the first element of the underlying array</li>
+<li>A length, which can be inspected with the <a href="https://golang.org/pkg/builtin/#len">built-in function</a> <span class="code">len</span></li>
+<li>A capacity, which can be inspected with the <a href="https://golang.org/pkg/builtin/#cap">built-in function</a> <span class="code">cap</span></li>
+</ul>
+<p>The zero-value of a slice is <span class="code">nil</span>:</p>
+
+
+<div class="code"><span class="keyword">var</span> slice []<span class="datatype">string</span>
+
+isNil := slice == nil <span class="comment">// true</span>
+</div>
+
+<p>Initialise a slice with <span class="code">make</span>:</p>
+
+
+<div class="code">newsletters := <span class="builtin">make</span>([]<span class="datatype">string</span>, 2)
+newsletters[0] = "Money Stuff by Matt Levine"
+newsletters[1] = "The Bluestocking by Helen Lewis"
+</div>
+
+<p>Or use a slice literal:</p>
+
+
+<div class="code">newsletters := []<span class="datatype">string</span>{
+    "Money Stuff by Matt Levine",
+    "The Bluestocking by Helen Lewis",
+}
+</div>
+
+<p>Unlike arrays, they have no fixed length:</p>
+
+
+<div class="code">finance := []<span class="datatype">string</span>{"ft", "the economist"}      <span class="comment">// 2</span>
+general := []<span class="datatype">string</span>{"bbc", "hn", "lrb", "nyrb"} <span class="comment">// 4</span>
+
+fmt.Println(reflect.TypeOf(finance)) <span class="comment">// []string</span>
+fmt.Println(reflect.TypeOf(general)) <span class="comment">// []string</span>
+</div>
+
+<p>Slices use zero-based indexing:</p>
+
+
+<div class="code">under3 := []<span class="datatype">int</span>{0, 1, 2} <span class="comment">// [0, 1, 2]</span>
+
+under3[0:0]              <span class="comment">// []</span>
+under3[0:1]              <span class="comment">// [0]</span>
+under3[0:2]              <span class="comment">// [0, 1]</span>
+under3[0:3]              <span class="comment">// [0, 1, 2]</span>
+</div>
+
+<p>They can be indexed from zero through to the length of the underlying array. </p>
+
+<p>The <em>length</em> of a slice is the number of items in the slice. Using the example above:</p>
+
+
+<div class="code"><span class="builtin">len</span>(under3[0:0]) <span class="comment">// 0: []</span>
+<span class="builtin">len</span>(under3[0:1]) <span class="comment">// 1: [0]</span>
+<span class="builtin">len</span>(under3[0:2]) <span class="comment">// 2: [0, 1]</span>
+<span class="builtin">len</span>(under3[0:3]) <span class="comment">// 3: [0, 1, 2]</span>
+</div>
+
+<p>The <em>capacity</em> of a slice is the length of the underlying array.</p>
+
+
+<div class="code">first := under3[0:1] <span class="comment">// [0]</span>
+
+<span class="builtin">len</span>(first)           <span class="comment">// 1: [0]</span>
+<span class="builtin">cap</span>(first)           <span class="comment">// 3: [0, 1, 2]</span>
+</div>
+
+<p>The <em>slice pointer</em> is the memory address of the first element of the underlying array:</p>
+
+
+<div class="code">finance := []<span class="datatype">string</span>{"ft", "the economist"}
+
+fmt.Printf("%p", finance) <span class="comment">// 0xc0000a6020</span>
+</div>
+
+<p>Thus <span class="code">0xc0000a6020</span> is the memory address of <span class="code">ft</span> in the array type <span class="code">[2]string</span>.</p>
+
+<p>The slice pointer changes when the left-index changes. That is, slicing from <span class="code">[0:3]</span> to <span class="code">[0:cap(slice)]</span> has no effect on the slice pointer. But, a move from <span class="code">[0:3]</span> to <span class="code">[2:3]</span> <em>does</em>.</p>
+
+<p>A few important points:</p>
+
+<ul><li>The length of a slice can only grow to its capacity</li>
+<li>The left-index of a slice cannot be less than zero</li>
+<li>The capacity of the slice decreases as the left-index increases</li>
+</ul>
+<p>To illustrate, consider the below:</p>
+
+
+<div class="code">newsletters := []<span class="datatype">string</span>{
+    "Matt Levine",
+    "Helen Lewis",
+}
+
+fmt.Printf("%p\n", newsletters) <span class="comment">// 0xc00000c080</span>
+
+newsletters = newsletters[1:]   <span class="comment">// remove Matt Levine</span>
+
+<span class="builtin">len</span>(newsletters) <span class="comment">// 1</span>
+<span class="builtin">cap</span>(newsletters) <span class="comment">// 1</span>
+
+fmt.Printf("%p\n", newsletters) <span class="comment">// 0xc00000c090</span>
+</div>
+
+<p>The re-slice of <span class="code">newsletters</span> from <span class="code">[0:cap(newsletters)]</span> to <span class="code">[1:]</span> reduces the capacity from two to one. And, as I mentioned earlier, a slice cannot grow beyond its capacity: <span class="code">Matt Levine</span> is lost forever (a tragic day!).</p>
+
+<p>That said, this sort of isn't true. The <a href="https://golang.org/pkg/builtin/#append">built-in function</a> <span class="code">append</span> can, which:</p>
+
+<blockquote><p>appends elements to the end of a slice. If it has sufficient capacity, the destination is resliced to accommodate the new elements. If it does not, a new underlying array will be allocated. Append returns the updated slice. It is therefore necessary to store the result of append, often in the variable holding the slice itself</p>
+</blockquote>
+<p>For example:</p>
+
+
+<div class="code"><span class="keyword">var</span> pension = []<span class="datatype">string</span>{"apple", "google"}
+
+pension = <span class="builtin">append</span>(pension, "netflix", "tesla")
+</div>
+
+<p>Go has another useful <a href="https://golang.org/pkg/builtin/#copy">built-in function</a> called <span class="code">copy</span>, which:</p>
+
+<blockquote><p>copies elements from a source slice into a destination slice. (As a special case, it also will copy bytes from a string to a slice of bytes.) The source and destination may overlap. Copy returns the number of elements copied, which will be the minimum of len(src) and len(dst).</p>
+</blockquote>
+<p>For example:</p>
+
+
+<div class="code"><span class="keyword">var</span> savings = <span class="builtin">make</span>([]<span class="datatype">string</span>, 2)
+
+<span class="builtin">copy</span>(savings, pension)
+</div>
+
+<p>To finish, let me quote Andrew Gerrand from the excellent blog post <a href="https://blog.golang.org/slices-intro">Go Slices: usage and internals</a>:</p>
+
+<blockquote><p>Arrays have their place, but they're a bit inflexible, so you don't see them too often in Go code. Slices, though, are everywhere. They build on arrays to provide great power and convenience.</p>
+</blockquote>
+<p>... like the <a href="https://golang.org/pkg/sort/">sort package</a>: slices, everywhere! </p>
+    </div>
+</article>
+
+    
+    </section>
+    </body>
+    </html>
+

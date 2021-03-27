@@ -1,0 +1,121 @@
+
+    
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <title>blog</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+    <nav id="nav-bar">
+        <ul>
+            
+                <li><a href="/">home</a></li>
+            
+                <li><a href="/posts/all.html">archive</a></li>
+            
+            
+                <li><a href="/notes.html">notes</a></li>
+            
+                <li><a href="/about.html">about</a></li>
+            
+        </ul>
+    </nav>
+    <section id="content">
+
+    
+<article>
+    
+        <h1>Goroutines</h1>
+    
+    <div class="info">
+        <div class="date">July 24th, 2020</div>
+    </div>
+    <div id="post-content">
+        
+<p>Concurrency is just <em>too</em> easy in Go: put the <span class="code">go</span> <a href="https://golang.org/ref/spec#Go_statements">keyword</a> in front of any function and <em>voila</em>, it runs concurrently. But why is it so easy and how does it work?</p>
+
+<p>It begins with the goroutine. The main function of every Go program executes in a goroutine. They are independent lines of execution, similar to threads. However one key difference is the cost: goroutines are cheap. The default stack size of a POSIX thread is <a href="https://man7.org/linux/man-pages/man3/pthread_create.3.html">2MB</a>, goroutines start with <a href="https://golang.org/doc/go1.4#runtime">2048 bytes</a>. Go uses <a href="https://golang.org/doc/faq#goroutines">resizable, bounded stacks</a>, which the runtime grows and shrinks automatically. It is practical to run hundreds of thousands - even <em>millions</em> - of goroutines. Go does this through its <a href="https://rakyll.org/scheduler/">M:N scheduler</a>. Or, in other words, it multiplexes <em>x</em> goroutines over <em>y</em> OS threads that run on <em>z</em> processors (where <em>z</em> is a <a href="https://golang.org/pkg/runtime/#GOMAXPROCS">configurable number</a>).</p>
+
+
+<div class="code"><span class="keyword">go</span> doWork()
+</div>
+
+<p>Essentially, a goroutine is a function that runs concurrently to other functions.</p>
+
+
+<div class="code"><span class="keyword">go</span> worker(x, y, z)
+</div>
+
+<p>Simply put the <span class="code">go</span> keyword in front of any function call and Go will run the function in a new goroutine. All variables passed to the function are evaluated in the <em>current</em> goroutine. Thus variables <span class="code">x</span>, <span class="code">y</span>, and <span class="code">z</span> in the example above are evaluated in the goroutine executing the <span class="code">go</span> statement, and the <span class="code">worker</span> function is executed in the new goroutine.</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+    <span class="keyword">go</span> <span class="keyword">func</span>() {
+        fmt.Println("hello, world")
+    }()
+}
+</div>
+
+<p>Anonymous functions can be spawned in goroutines too. However note the example above is quite interesting: it doesn't actually print anything. Why?</p>
+
+<p>The Go language <a href="https://golang.org/ref/spec#Program_execution">specification</a>:</p>
+
+<blockquote><p> Program execution begins by initializing the main package and then invoking the function main. When that function invocation returns, the program exits. It does not wait for other (non-main) goroutines to complete.</p>
+</blockquote>
+<p>In other words, it doesn't print anything because the main goroutine died before the spawned goroutine ran.  This highlights an important point: Go provides no guarantee on <em>when</em> goroutines will run — only that it will run, if given enough time.</p>
+
+<p>Go follows the <a href="https://en.wikipedia.org/wiki/Fork%E2%80%93join_model">fork-join</a> model of parallelism: parent goroutines <em>fork</em> child goroutines, with the intention that the child runs in parallel to the parent. Then at some point in the future — usually when the child is finished processing — the child <em>joins</em> back up with the parent (the join point).</p>
+
+
+<div class="code">c := <span class="builtin">make</span>(<span class="keyword">chan</span> <span class="datatype">int</span>)
+<span class="keyword">go</span> worker(c) <span class="comment">// fork</span>
+<-c          <span class="comment">// join</span>
+</div>
+
+<p>The main goroutine (<span class="code">g1</span>) forks the function <span class="code">worker</span> in a new goroutine (<span class="code">g2</span>). <span class="code">g2</span> joins back up with <span class="code">g1</span> when <span class="code">g1</span> receives on the channel.</p>
+
+
+<div class="code"><span class="keyword">func</span> main() {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	<span class="keyword">go</span> hello(wg) <span class="comment">// fork</span>
+	wg.Wait()    <span class="comment">// join</span>
+}
+
+<span class="keyword">func</span> hello(wg sync.WaitGroup) {
+	fmt.Println("hello, world")
+	wg.Done()
+}
+</div>
+
+<p>Perhaps a little more contrived: the main goroutine (<span class="code">g1</span>) forks the function <span class="code">hello</span> in a new goroutine (<span class="code">g2</span>). <span class="code">g2</span> joins back up with <span class="code">g1</span> when <span class="code">g1</span> waits for the <span class="code">WaitGroup</span> to finish (i.e. when the counter is back to zero).</p>
+
+<p>Programmers should be mindful of when and where goroutines start (are forked) and finish (the join points). And, most importantly, know <em>exactly</em> when goroutines block (especially the main thread).</p>
+
+<p>The words <em>concurrency</em> and <em>parallelism</em> were referenced in this post. Rob Pike has an excellent <a href="https://talks.golang.org/2012/concurrency.slide#1">slide deck</a> on the difference. He summarises it on <a href="https://talks.golang.org/2012/concurrency.slide#6">slide 6</a>:</p>
+
+<blockquote><p> Concurrency is the composition of independently executing computations. </p>
+<p>Concurrency is a way to structure software, particularly as a way to write clean code that interacts well with the real world. </p>
+</blockquote>
+<p>And then expands on <a href="https://talks.golang.org/2012/concurrency.slide#7">slide 7</a>:</p>
+
+<blockquote><p>Concurrency is not parallelism, although it enables parallelism. </p>
+<p> If you have only one processor, your program can still be concurrent but it cannot be parallel. </p>
+<p> On the other hand, a well-written concurrent program might run efficiently in parallel on a multiprocessor. That property could be important...</p>
+</blockquote>
+<p>Or, as he put it even more simply in his <a href="https://www.youtube.com/watch?v=cN_DpYBzKso">talk</a>:</p>
+
+<blockquote><p>Concurrency is about dealing with a lot of things at once, and parallelism is about doing a lot of things at once.</p>
+</blockquote>
+<p>To summarise, goroutines are like cheap, lightweight threads. They have their own stack that grows and shrinks automatically; the Go runtime manages their distribution over <em>n</em> OS threads; one should be mindful of exactly when they start, when they finish, and where they block. Essentially, they allow the programmer to write concurrent programs. Get this right, and Go gives you the parallelism for free.</p>
+    </div>
+</article>
+
+    
+    </section>
+    </body>
+    </html>
+
