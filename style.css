@@ -1,0 +1,158 @@
+html {
+    overflow-y: scroll;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    font-family: "Georgia", serif;
+    font-size: 1em;
+    margin: 4px auto;
+    max-width: 650px;
+    padding: 0 13px;
+}
+
+nav {
+    font-size: 0.85em;
+    margin-bottom: 50px;
+    padding-bottom: 4px;
+    width: 100%;
+}
+
+nav a {line-height: 30px;}
+
+nav ul {
+    display: flex;
+    font-size: 1.25em;
+    justify-content: flex-end;
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+nav li {
+    padding-right: 13px;
+}
+
+a:hover {
+    background-color: #ffeaa8;
+}
+
+a {
+    border-bottom: 0.2em red solid;
+    text-decoration: none;
+    color: black;
+}
+
+#content > a:hover,
+#post-content a {
+    border-bottom: 0.1em red solid;
+    color: black;
+}
+
+img {
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+table {
+    border: none;
+    line-height: 30px;
+    table-layout: fixed;
+    width: 100%;
+}
+
+#content {width: 100%;}
+
+.date {
+    font-style: italic;
+}
+
+.tag {
+    font-style: italic;
+    margin-right: 10px;
+}
+
+h1 {
+    font-size: 1.4em;
+    margin-top: 0;
+}
+
+h2 {font-size: 1.15em;}
+h3 {font-size: 1.1em;}
+h4 {font-size: 1.75em;}
+h5 {font-size: 1.5em;}
+h6 {font-size: 1.25em;}
+
+.info {
+    color: #524e4e;
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 10px;
+}
+
+article {
+    margin-bottom: 50px;
+}
+
+article h1 {
+    margin-block-end: 10px;
+}
+
+article h1 a {
+    text-decoration: none;
+    color: black;
+}
+
+#post-content {line-height: 1.6;}
+#post-content ul {list-style-type: square;}
+
+#blogPosts a.tag {
+    padding-left: 2px;
+    padding-right: 2px;
+    text-decoration: none;
+}
+
+blockquote {
+    border-left: 0.15em solid #524e4e;
+    color: #524e4e;
+    font-size: 0.95em;
+    font-style: italic;
+    margin-left: 0;
+    padding-left: 1em;
+}
+
+div.code {
+    background-color: #f5f5f5;
+    padding: 1em;
+    overflow: auto;
+    white-space: pre;
+    font-family: monospace;
+    font-size: 1.1em;
+}
+
+div.code .keyword {
+    color: darkblue;
+    font-weight: bold;
+}
+
+div.code .builtin {
+    color: rebeccapurple;
+    font-weight: bold;
+}
+
+div.code .datatype {
+    color: blue;
+    font-weight: bold;
+}
+
+div.code .comment {
+    color: darkgreen;
+    font-style: italic;
+}
+
+span.code {
+    background-color: #f5f5f5;
+    font-style: italic;
+    padding: 0.2em;
+}
+
