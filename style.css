@@ -5,8 +5,8 @@ html {
 body {
     display: flex;
     flex-direction: column;
-    font-family: -apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;
-    font-size: 0.95em;
+    font-family: "Georgia", serif;
+    font-size: 1em;
     margin: 4px auto;
     max-width: 650px;
     padding: 0 13px;
@@ -115,7 +115,7 @@ article h1 a {
 blockquote {
     border-left: 0.15em solid #524e4e;
     color: #524e4e;
-    font-size: 0.90em;
+    font-size: 0.95em;
     font-style: italic;
     margin-left: 0;
     padding-left: 1em;
